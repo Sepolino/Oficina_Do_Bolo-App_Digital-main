@@ -1,5 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../repositories/bolo_repositories.dart';
+import '../models/carrinho.dart';
+import '../repositories/firestore_service.dart';
 import 'home.dart';
 
 class PagamentoPagina extends StatefulWidget {
@@ -52,12 +55,48 @@ class _PagamentoPaginaState extends State<PagamentoPagina> {
     return true;
   }
 
-  void _finalizarPagamento() {
+  void _finalizarPagamento() async {
+    if (carrinhoRepo.itens.isEmpty) {
+      _showMensagem('Seu carrinho está vazio. Adicione um bolo antes de finalizar.');
+      return;
+    }
+
     if (metodoSelecionado == 'Cartão de Crédito' && !_validarCartao()) {
       return;
     }
 
-    _showMensagem('Pagamento aprovado com sucesso!');
+    final user = FirebaseAuth.instance.currentUser;
+    final pedidoData = {
+      'userId': user?.uid,
+      'userEmail': user?.email,
+      'items': carrinhoRepo.itens.map((item) {
+        return {
+          'nome': item.bolo.nome,
+          'quantidade': item.quantidade,
+          'preco': item.bolo.preco,
+          'tamanho': item.bolo.tamanho,
+          'foto': item.bolo.foto,
+        };
+      }).toList(),
+      'total': carrinhoRepo.valorTotal,
+      'metodo': metodoSelecionado,
+      'createdAt': FieldValue.serverTimestamp(),
+    };
+
+    try {
+      await FirebaseFirestore.instance.collection('pedidos').add(pedidoData);
+      await FirestoreService().logTransaction(
+        userId: user?.uid ?? '',
+        userEmail: user?.email ?? '',
+        total: carrinhoRepo.valorTotal,
+        metodo: metodoSelecionado,
+      );
+      carrinhoRepo.limpar();
+      _showMensagem('Pedido registrado com sucesso!');
+    } catch (e) {
+      _showMensagem('Erro ao salvar pedido. Tente novamente.');
+      return;
+    }
 
     Future.delayed(const Duration(milliseconds: 900), () {
       if (!mounted) return;
@@ -88,6 +127,160 @@ class _PagamentoPaginaState extends State<PagamentoPagina> {
           }
         },
       ),
+    );
+  }
+
+  Widget _buildMetodoPagamento() {
+    if (metodoSelecionado == 'Cartão de Crédito') {
+      return Column(
+        children: [
+          const SizedBox(height: 12),
+          TextField(
+            controller: _nomeController,
+            style: const TextStyle(color: Colors.black87),
+            cursorColor: Colors.pink,
+            decoration: InputDecoration(
+              labelText: 'Nome completo no cartão',
+              labelStyle: const TextStyle(color: Colors.black54),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              filled: true,
+              fillColor: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _cartaoController,
+            keyboardType: TextInputType.number,
+            style: const TextStyle(color: Colors.black87),
+            cursorColor: Colors.pink,
+            decoration: InputDecoration(
+              labelText: 'Número do cartão',
+              labelStyle: const TextStyle(color: Colors.black54),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              filled: true,
+              fillColor: Colors.white,
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (metodoSelecionado == 'Pix') {
+      return Column(
+        children: [
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'PIX rápido e seguro',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Copie a chave abaixo e use no seu app bancário:',
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
+                ),
+                const SizedBox(height: 12),
+                const SelectableText(
+                  'meupix@oficinadobolo.com',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.pinkAccent,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Valor: R\$ ${carrinhoRepo.valorTotal.toStringAsFixed(2)}',
+                  style: const TextStyle(fontSize: 14, color: Colors.black54),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      children: [
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Boleto bancário',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Pague até 3 dias úteis na sua agência ou internet banking.',
+                style: TextStyle(fontSize: 14, color: Colors.black87),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Vencimento: 07/05/2026',
+                style: TextStyle(fontSize: 14, color: Colors.black54),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Boleto gerado com sucesso. Use o código abaixo para pagamento:',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '34191.79001 01043.510047 91020.150008 5 97880000010000',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.pinkAccent,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Valor: R\$ ${carrinhoRepo.valorTotal.toStringAsFixed(2)}',
+                style: const TextStyle(fontSize: 14, color: Colors.black54),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -137,17 +330,39 @@ class _PagamentoPaginaState extends State<PagamentoPagina> {
                     ),
                     const SizedBox(height: 10),
                     Text(
+                      'Itens: ${carrinhoRepo.itens.length} | Quantidade total: ${carrinhoRepo.totalItens}',
+                      style: const TextStyle(fontSize: 14, color: Colors.black87),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
                       'Total: R\$ ${carrinhoRepo.valorTotal.toStringAsFixed(2)}',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
                       'Esta é uma simulação de pagamento. Escolha a forma desejada e finalize.',
                       style: TextStyle(fontSize: 14, color: Colors.black54),
                     ),
+                    if (carrinhoRepo.itens.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Produtos no pedido:',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 8),
+                      ...carrinhoRepo.itens.map((item) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Text(
+                            '${item.bolo.nome} x${item.quantidade} - R\$ ${(item.bolo.preco * item.quantidade).toStringAsFixed(2)}',
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                        );
+                      }),
+                    ],
                   ],
                 ),
               ),
@@ -157,138 +372,7 @@ class _PagamentoPaginaState extends State<PagamentoPagina> {
               _opcaoMetodo('Pix', Icons.qr_code),
               _opcaoMetodo('Boleto', Icons.receipt_long),
 
-              if (metodoSelecionado == 'Cartão de Crédito') ...[
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _nomeController,
-                  style: const TextStyle(color: Colors.black87),
-                  cursorColor: Colors.pink,
-                  decoration: InputDecoration(
-                    labelText: 'Nome completo no cartão',
-                    labelStyle: const TextStyle(color: Colors.black54),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _cartaoController,
-                  keyboardType: TextInputType.number,
-                  style: const TextStyle(color: Colors.black87),
-                  cursorColor: Colors.pink,
-                  decoration: InputDecoration(
-                    labelText: 'Número do cartão',
-                    labelStyle: const TextStyle(color: Colors.black54),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                  ),
-                ),
-              ] else if (metodoSelecionado == 'Pix') ...[
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.06),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
-                        'PIX rápido e seguro',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        'Copie a chave abaixo e use no seu app bancário:',
-                        style: TextStyle(fontSize: 14, color: Colors.black87),
-                      ),
-                      SizedBox(height: 12),
-                      SelectableText(
-                        'meupix@oficinadobolo.com',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.pinkAccent,
-                        ),
-                      ),
-                      SizedBox(height: 12),
-                      Text(
-                        'Valor: R\$ 0,00',
-                        style: TextStyle(fontSize: 14, color: Colors.black54),
-                      ),
-                    ],
-                  ),
-                ),
-              ] else ...[
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.06),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
-                        'Boleto bancário',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        'Pague até 3 dias úteis na sua agência ou internet banking.',
-                        style: TextStyle(fontSize: 14, color: Colors.black87),
-                      ),
-                      SizedBox(height: 12),
-                      Text(
-                        'Vencimento: 07/05/2026',
-                        style: TextStyle(fontSize: 14, color: Colors.black54),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Linha digitável:',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                      ),
-                      SizedBox(height: 6),
-                      SelectableText(
-                        '34191.79001 01043.510047 91020.150008 5 97880000010000',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.pinkAccent,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+              _buildMetodoPagamento(),
 
               const Spacer(),
               SizedBox(

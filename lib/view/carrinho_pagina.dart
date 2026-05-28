@@ -18,7 +18,7 @@ class _CarrinhoViewState extends State<CarrinhoView> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Carrinho"),
+        title: Text("Carrinho (${repo.totalItens} itens)"),
         centerTitle: true,
       ),
       body: itens.isEmpty

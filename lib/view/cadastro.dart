@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../repositories/firestore_service.dart';
 
 class RegisterView extends StatefulWidget {
   const RegisterView({super.key});
@@ -25,10 +26,19 @@ class _RegisterViewState extends State<RegisterView> {
     String senha = _passwordController.text.trim();
 
     try {
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email,
         password: senha,
       );
+
+      await FirestoreService().saveUserProfile(
+        uid: credential.user?.uid ?? '',
+        username: _usernameController.text.trim(),
+        email: email,
+        telefone: _telController.text.trim(),
+      );
+
+      if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Cadastro realizado com sucesso!")),

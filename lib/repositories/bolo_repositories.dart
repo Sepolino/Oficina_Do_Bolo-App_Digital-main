@@ -33,57 +33,6 @@ class userRepository{
   static List<user> tabelauser = [];
 }
 
-class carrinhoRepository {
-
-  // LISTA PRIVADA
-  final List<carrinho> _itens = [];
-
-  // GET PARA ACESSAR OS ITENS
-  List<carrinho> get itens => _itens;
-
-  // ================= ADICIONAR =================
-  void adicionar(carrinho item) {
-
-    // VERIFICA SE O BOLO JÁ EXISTE NO CARRINHO
-    int index = _itens.indexWhere(
-      (element) => element.bolo.nome == item.bolo.nome,
-    );
-
-    if (index >= 0) {
-      // SE JÁ EXISTE → SOMA QUANTIDADE
-      _itens[index].quantidade += item.quantidade;
-    } else {
-      // SE NÃO EXISTE → ADICIONA NOVO
-      _itens.add(item);
-    }
-  }
-
-  // ================= REMOVER =================
-  void remover(carrinho item) {
-    _itens.remove(item);
-  }
-
-  // ================= LIMPAR =================
-  void limpar() {
-    _itens.clear();
-  }
-
-  // ================= TOTAL DE ITENS =================
-  int get totalItens {
-    return _itens.fold(0, (total, item) => total + item.quantidade);
-  }
-
-  // ================= VALOR TOTAL =================
-  double get valorTotal {
-    return _itens.fold(
-      0.0,
-      (total, item) => total + (item.bolo.preco * item.quantidade),
-    );
-  }
-}
-
-final carrinhoRepository carrinhoRepo = carrinhoRepository();
-
 class pedidoRepository {
   final List<Pedido> _pedidos = [];
 

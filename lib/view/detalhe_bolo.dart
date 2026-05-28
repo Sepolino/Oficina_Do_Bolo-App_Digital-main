@@ -19,13 +19,28 @@ class DetalheBoloView extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: Image.asset(
-                bolo.foto,
+              child: SizedBox(
                 width: double.infinity,
                 height: 250,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) =>
-                    const Icon(Icons.image, size: 120),
+                child: bolo.foto.isEmpty
+                    ? const Center(child: Icon(Icons.image, size: 120))
+                    : (Uri.tryParse(bolo.foto)?.hasAbsolutePath ?? false)
+                        ? Image.network(
+                            bolo.foto,
+                            width: double.infinity,
+                            height: 250,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) =>
+                                const Icon(Icons.image, size: 120),
+                          )
+                        : Image.asset(
+                            bolo.foto,
+                            width: double.infinity,
+                            height: 250,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) =>
+                                const Icon(Icons.image, size: 120),
+                          ),
               ),
             ),
 

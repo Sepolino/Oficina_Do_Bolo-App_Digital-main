@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/bolos.dart';
 import '../models/carrinho.dart';
+import '../repositories/api_service.dart';
+import '../repositories/firestore_service.dart';
 import 'login_principal.dart';
 import 'carrinho_pagina.dart';
 import 'detalhe_bolo.dart';
+import 'historico_pedidos.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -17,6 +21,29 @@ class _HomeViewState extends State<HomeView> {
 
   String filtroTamanho = '';
   String pesquisa = '';
+  late Future<String> _tipFuture;
+  late Future<String?> _promoFuture;
+  final ApiService _apiService = ApiService();
+  final FirestoreService _firestoreService = FirestoreService();
+
+  @override
+  void initState() {
+    super.initState();
+    _tipFuture = _apiService.fetchBakingTip();
+    _promoFuture = _firestoreService.fetchPromotion();
+  }
+
+  void _refreshTip() {
+    setState(() {
+      _tipFuture = _apiService.fetchBakingTip();
+    });
+  }
+
+  void _refreshPromo() {
+    setState(() {
+      _promoFuture = _firestoreService.fetchPromotion();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +65,15 @@ class _HomeViewState extends State<HomeView> {
         elevation: 0,
         actions: [
           IconButton(
+            icon: const Icon(Icons.history),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const HistoricoPedidosView()),
+              );
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.shopping_cart),
             onPressed: () {
               Navigator.push(
@@ -53,19 +89,33 @@ class _HomeViewState extends State<HomeView> {
         stream: FirebaseFirestore.instance.collection('bolos').snapshots(),
         builder: (context, snapshot) {
 
+          if (snapshot.hasError) {
+            return Center(
+              child: Text('Erro ao carregar bolos: ${snapshot.error}'),
+            );
+          }
+
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
 
           final lista = snapshot.data!.docs.map((doc) {
             final data = doc.data() as Map<String, dynamic>;
+            final valor = data['valor'];
+
+            double preco = 0.0;
+            if (valor is num) {
+              preco = valor.toDouble();
+            } else if (valor is String) {
+              preco = double.tryParse(valor.replaceAll(',', '.')) ?? 0.0;
+            }
 
             return bolos(
-              nome: data['nome'],
-              ingredientes: data['ingredientes'],
-              preco: (data['valor'] is num) ? (data['valor'] as num).toDouble() : 0.0,
-              tamanho: data['tamanho'],
-              foto: data['imagem'],
+              nome: data['nome']?.toString() ?? 'Sem nome',
+              ingredientes: data['ingredientes']?.toString() ?? 'Sem ingredientes',
+              preco: preco,
+              tamanho: data['tamanho']?.toString() ?? '',
+              foto: data['imagem']?.toString() ?? '',
             );
           }).toList();
 
@@ -78,6 +128,157 @@ class _HomeViewState extends State<HomeView> {
 
           return Column(
             children: [
+
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Olá, ${FirebaseAuth.instance.currentUser?.email ?? 'Cliente'}',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: FutureBuilder<String?>(
+                  future: _promoFuture,
+                  builder: (context, promoSnapshot) {
+                    if (promoSnapshot.connectionState == ConnectionState.waiting) {
+                      return const SizedBox.shrink();
+                    }
+
+                    final promo = promoSnapshot.data;
+                    if (promo == null || promo.isEmpty) {
+                      return const SizedBox.shrink();
+                    }
+
+                    return Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.04),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Promoção especial',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  promo,
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.refresh),
+                            onPressed: _refreshPromo,
+                            tooltip: 'Atualizar promoção',
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: FutureBuilder<String>(
+                  future: _tipFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: const Row(
+                          children: [
+                            CircularProgressIndicator(),
+                            SizedBox(width: 12),
+                            Expanded(child: Text('Carregando dica do dia...')),
+                          ],
+                        ),
+                      );
+                    }
+
+                    final tip = snapshot.data ?? 'Tente novamente para carregar a dica do dia.';
+
+                    return Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Dica da Confeitaria',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  tip,
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.refresh),
+                            onPressed: _refreshTip,
+                            tooltip: 'Atualizar dica',
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
 
               // --- PESQUISA ---
               Padding(
@@ -170,7 +371,7 @@ class _HomeViewState extends State<HomeView> {
                                 child: Image.network(
                                   bolo.foto,
                                   fit: BoxFit.contain,
-                                  errorBuilder: (_, __, ___) =>
+                                  errorBuilder: (_, _, _) =>
                                       const Icon(Icons.image),
                                 ),
                               ),
@@ -210,6 +411,12 @@ class _HomeViewState extends State<HomeView> {
                                   onPressed: () {
                                     carrinhoRepo.adicionar(
                                       carrinho(bolo: bolo, quantidade: 1),
+                                    );
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Bolo adicionado ao carrinho'),
+                                        duration: Duration(milliseconds: 900),
+                                      ),
                                     );
                                   },
                                   child: const Text("Adicionar"),

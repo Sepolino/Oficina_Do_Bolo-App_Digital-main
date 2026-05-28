@@ -12,13 +12,7 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  runApp(
-    MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Firebase Test',
-      home: LoginPrincipal(),
-    ),
-  );
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
