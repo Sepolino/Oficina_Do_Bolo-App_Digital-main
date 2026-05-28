@@ -1,1 +1,16 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"oficinadobolo-app","appId":"1:78273597272:android:4fa71fefd8a2e99ab61f2d","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"oficinadobolo-app","configurations":{"android":"1:78273597272:android:4fa71fefd8a2e99ab61f2d","ios":"1:78273597272:ios:5db701ac9f871030b61f2d","web":"1:78273597272:web:ed80bfc849e79fd5b61f2d","windows":"1:78273597272:web:0553444bf7c885c4b61f2d"}}}}}}
+{
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

@@ -1,0 +1,114 @@
+mutation SeedData @transaction @auth(level: USER, insecureReason: "Seed data is for development purposes only and will be removed in production.") {
+  user1: user_insert(data: {
+    id: "a1a1a1a1-b2b2-c3c3-d4d4-e5e5e5e5e5e5",
+    displayName: "João Silva",
+    email: "joao.silva@example.com",
+    createdAt: "2023-01-15T10:00:00Z",
+    role: "customer"
+  })
+  user2: user_insert(data: {
+    id: "f6f6f6f6-g7g7-h8h8-i9i9-j0j0j0j0j0j0",
+    displayName: "Maria Santos",
+    email: "maria.santos@example.com",
+    createdAt: "2023-02-20T11:30:00Z",
+    role: "customer"
+  })
+  cakeDesign1: cakeDesign_insert(data: {
+    id: "1a1a1a1a-1b1b-1c1c-1d1d-1e1e1e1e1e1e",
+    name: "Classic Chocolate Cake",
+    description: "A rich and moist chocolate cake, perfect for any occasion.",
+    basePrice: 50.00,
+    imageUrl: "https://example.com/chocolate_cake.jpg",
+    createdAt: "2023-03-01T09:00:00Z",
+    availableSizes: ["Small", "Medium", "Large"],
+    defaultFlavors: ["Chocolate"],
+    defaultFillings: ["Chocolate Ganache"]
+  })
+  cakeDesign2: cakeDesign_insert(data: {
+    id: "2f2f2f2f-2g2g-2h2h-2i2i-2j2j2j2j2j2j",
+    name: "Vanilla Berry Bliss",
+    description: "Light vanilla cake with fresh berry filling and cream cheese frosting.",
+    basePrice: 65.00,
+    imageUrl: "https://example.com/vanilla_berry.jpg",
+    createdAt: "2023-03-05T14:00:00Z",
+    availableSizes: ["Medium", "Large"],
+    defaultFlavors: ["Vanilla"],
+    defaultFillings: ["Mixed Berry Compote"]
+  })
+  flavor1: flavor_insert(data: {
+    id: "3k3k3k3k-3l3l-3m3m-3n3n-3o3o3o3o3o3o",
+    name: "Chocolate",
+    type: "Flavor",
+    description: "Rich and classic chocolate flavor."
+  })
+  flavor2: flavor_insert(data: {
+    id: "4p4p4p4p-4q4q-4r4r-4s4s-4t4t4t4t4t4t",
+    name: "Vanilla",
+    type: "Flavor",
+    description: "Sweet and aromatic vanilla flavor."
+  })
+  flavor3: flavor_insert(data: {
+    id: "5u5u5u5u-5v5v-5w5w-5x5x-5y5y5y5y5y5y",
+    name: "Chocolate Ganache",
+    type: "Filling",
+    description: "Smooth and decadent chocolate filling."
+  })
+  flavor4: flavor_insert(data: {
+    id: "6z6z6z6z-7a7a-7b7b-7c7c-7d7d7d7d7d7d",
+    name: "Mixed Berry Compote",
+    type: "Filling",
+    description: "Tangy and sweet berry filling with real fruit pieces."
+  })
+  flavor5: flavor_insert(data: {
+    id: "8e8e8e8e-8f8f-8g8g-8h8h-8i8i8i8i8i8i",
+    name: "Cream Cheese",
+    type: "Frosting",
+    description: "Classic sweet and tangy cream cheese frosting."
+  })
+  order1: order_insert(data: {
+    id: "9j9j9j9j-9k9k-9l9l-9m9m-9n9n9n9n9n9n",
+    userId: "a1a1a1a1-b2b2-c3c3-d4d4-e5e5e5e5e5e5",
+    createdAt: "2023-04-10T10:00:00Z",
+    deliveryDate: "2023-04-15",
+    totalPrice: 50.00,
+    status: "Pending",
+    deliveryAddress: "Rua do Bolo, 123, São Paulo, SP",
+    specialInstructions: "Extra candles.",
+    personalizedMessage: "Happy Birthday!"
+  })
+  order2: order_insert(data: {
+    id: "o0o0o0o0-p1p1-q2q2-r3r3-s4s4s4s4s4s4",
+    userId: "f6f6f6f6-g7g7-h8h8-i9i9-j0j0j0j0j0j0",
+    createdAt: "2023-04-12T11:00:00Z",
+    deliveryDate: "2023-04-18",
+    totalPrice: 65.00,
+    status: "Processing",
+    deliveryAddress: "Avenida Doce, 456, Rio de Janeiro, RJ",
+    specialInstructions: "Deliver after 2 PM.",
+    personalizedMessage: "Congratulations!"
+  })
+  orderItem1: orderItem_insert(data: {
+    id: "t5t5t5t5-u6u6-v7v7-w8w8-x9x9x9x9x9x9",
+    orderId: "9j9j9j9j-9k9k-9l9l-9m9m-9n9n9n9n9n9n",
+    cakeDesignId: "1a1a1a1a-1b1b-1c1c-1d1d-1e1e1e1e1e1e",
+    quantity: 1,
+    priceAtOrder: 50.00,
+    selectedSize: "Medium",
+    selectedFlavorId: "3k3k3k3k-3l3l-3m3m-3n3n-3o3o3o3o3o3o",
+    selectedFillingId: "5u5u5u5u-5v5v-5w5w-5x5x-5y5y5y5y5y5y",
+    selectedFrostingId: "5u5u5u5u-5v5v-5w5w-5x5x-5y5y5y5y5y5y", # Assuming chocolate ganache can also be a frosting
+    customDecorations: "Happy Birthday text"
+  })
+  orderItem2: orderItem_insert(data: {
+    id: "y0y0y0y0-z1z1-a2a2-b3b3-c4c4c4c4c4c4",
+    orderId: "o0o0o0o0-p1p1-q2q2-r3r3-s4s4s4s4s4s4",
+    cakeDesignId: "2f2f2f2f-2g2g-2h2h-2i2i-2j2j2j2j2j2j",
+    quantity: 1,
+    priceAtOrder: 65.00,
+    selectedSize: "Large",
+    selectedFlavorId: "4p4p4p4p-4q4q-4r4r-4s4s-4t4t4t4t4t4t",
+    selectedFillingId: "6z6z6z6z-7a7a-7b7b-7c7c-7d7d7d7d7d7d",
+    selectedFrostingId: "8e8e8e8e-8f8f-8g8g-8h8h-8i8i8i8i8i8i",
+    customDecorations: null
+  })
+}

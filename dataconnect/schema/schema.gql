@@ -1,0 +1,49 @@
+type User @table {
+  displayName: String!
+  email: String!
+  createdAt: Timestamp!
+  role: String!
+  photoUrl: String
+  phoneNumber: String
+  address: String
+}
+
+type CakeDesign @table {
+  name: String!
+  description: String!
+  basePrice: Float!
+  imageUrl: String!
+  createdAt: Timestamp!
+  availableSizes: [String]
+  defaultFlavors: [String]
+  defaultFillings: [String]
+}
+
+type Flavor @table {
+  name: String!
+  type: String!
+  description: String
+}
+
+type Order @table {
+  user: User!
+  createdAt: Timestamp!
+  deliveryDate: Date!
+  totalPrice: Float!
+  status: String!
+  deliveryAddress: String
+  specialInstructions: String
+  personalizedMessage: String
+}
+
+type OrderItem @table {
+  order: Order!
+  cakeDesign: CakeDesign
+  quantity: Int!
+  priceAtOrder: Float!
+  selectedSize: String!
+  selectedFlavor: Flavor
+  selectedFilling: Flavor
+  selectedFrosting: Flavor
+  customDecorations: String
+}

@@ -1,0 +1,57 @@
+query ListAllCakeDesigns @auth(level: PUBLIC, insecureReason: "This operation is safe to expose to the public") {
+  cakeDesigns {
+    id
+    name
+    description
+    basePrice
+    imageUrl
+    availableSizes
+    defaultFlavors
+    defaultFillings
+    createdAt
+  }
+}
+
+query GetMyOrders @auth(level: USER) {
+  orders(where: {userId: {eq_expr: "auth.uid"}}, orderBy: [{createdAt: DESC}]) {
+    id
+    createdAt
+    deliveryDate
+    totalPrice
+    status
+    deliveryAddress
+    specialInstructions
+    personalizedMessage
+    orderItems {
+      id
+      quantity
+      priceAtOrder
+      selectedSize
+      customDecorations
+      cakeDesign {
+        name
+      }
+      selectedFlavor {
+        name
+      }
+      selectedFilling {
+        name
+      }
+      selectedFrosting {
+        name
+      }
+    }
+  }
+}
+
+mutation CreateNewFlavor($name: String!, $type: String!, $description: String) @auth(level: USER) {
+  flavor_insert(data: {name: $name, type: $type, description: $description}) {
+    id
+  }
+}
+
+mutation UpdateMyProfile($displayName: String!, $phoneNumber: String, $address: String) @auth(level: USER) {
+  user_update(key: {id_expr: "auth.uid"}, data: {displayName: $displayName, phoneNumber: $phoneNumber, address: $address}) {
+    id
+  }
+}
